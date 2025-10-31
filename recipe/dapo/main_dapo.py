@@ -36,23 +36,33 @@ def main(config):
 def run_ppo(config) -> None:
     if not ray.is_initialized():
         # this is for local ray cluster
-        ray.init(
-            runtime_env={
-                "env_vars": {"TOKENIZERS_PARALLELISM": "true", "NCCL_DEBUG": "WARN", "VLLM_LOGGING_LEVEL": "WARN"}
-            },
-            num_cpus=config.ray_init.num_cpus,
-        )
+        default_runtime_env = {
+            "env_vars": {"TOKENIZERS_PARALLELISM": "true", "NCCL_DEBUG": "WARN", "VLLM_LOGGING_LEVEL": "WARN"}
+        }
+        ray_init_kwargs = config.ray_kwargs.get("ray_init", {})
+        runtime_env_kwargs = ray_init_kwargs.get("runtime_env", {})
+        runtime_env = OmegaConf.merge(default_runtime_env, runtime_env_kwargs)
+        ray_init_kwargs = OmegaConf.create({**ray_init_kwargs, "runtime_env": runtime_env})
+        print(f"ray init kwargs: {ray_init_kwargs}")
+        ray.init(**OmegaConf.to_container(ray_init_kwargs))
 
-    if (
-        is_cuda_available
-        and OmegaConf.select(config.trainer, "profile_steps") is not None
-        and len(OmegaConf.select(config.trainer, "profile_steps")) > 0
-    ):
-        nsight_options = OmegaConf.to_container(config.trainer.controller_nsight_options)
-        runner = TaskRunner.options(runtime_env={"nsight": nsight_options}).remote()
-    else:
-        runner = TaskRunner.remote()
-    ray.get(runner.run.remote(config))
+    try:
+        if (
+            is_cuda_available
+            and config.global_profiler.tool == "nsys"
+            and OmegaConf.select(config.global_profiler, "steps") is not None
+            and len(OmegaConf.select(config.global_profiler, "steps")) > 0
+        ):
+            nsight_options = OmegaConf.to_container(
+                config.global_profiler.global_tool_config.nsys.controller_nsight_options
+            )
+            runner = TaskRunner.options(runtime_env={"nsight": nsight_options}).remote()
+        else:
+            runner = TaskRunner.remote()
+        ray.get(runner.run.remote(config))
+    finally:
+        if ray.is_initialized():
+            ray.shutdown()
 
 
 @ray.remote(num_cpus=1)  # please make sure main_task is not scheduled on head
@@ -76,8 +86,10 @@ class TaskRunner:
         # instantiate tokenizer
         from verl.utils import hf_processor, hf_tokenizer
 
-        tokenizer = hf_tokenizer(local_path)
-        processor = hf_processor(local_path, use_fast=True)  # used for multimodal LLM, could be none
+        trust_remote_code = config.data.get("trust_remote_code", False)
+        tokenizer = hf_tokenizer(local_path, trust_remote_code=trust_remote_code)
+        # used for multimodal LLM, could be none
+        processor = hf_processor(local_path, trust_remote_code=trust_remote_code, use_fast=True)
 
         from verl.single_controller.ray import RayWorkerGroup
 
