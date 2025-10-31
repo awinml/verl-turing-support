@@ -234,7 +234,7 @@ class MegatronModelMerger(BaseModelMerger):
 
         tf_config = hf_to_mcore_config(
             self.hf_config,
-            torch.bfloat16,
+            torch.float16,
             num_layers_in_first_pipeline_stage=self.pipeline_shards[0] if len(self.pipeline_shards) > 1 else None,
             num_layers_in_last_pipeline_stage=self.pipeline_shards[-1] if len(self.pipeline_shards) > 2 else None,
         )

@@ -98,7 +98,7 @@ class MegatronEngine(BaseEngine):
         from verl.models.mcore import hf_to_mcore_config
         from verl.utils.torch_dtypes import PrecisionType
 
-        self.param_dtype = torch.bfloat16
+        self.param_dtype = torch.float16
         self.dtype = PrecisionType.to_dtype(self.param_dtype)
         tf_config = hf_to_mcore_config(
             self.model_config.hf_config, self.dtype, **self.engine_config.override_transformer_config

@@ -114,7 +114,7 @@ def as_torch_index(index: Any, device: torch.device | str | None = None) -> torc
         ):
             return t.to(device=target, dtype=torch.long)
 
-        if t.dtype in (torch.float16, torch.float32, torch.float64, torch.bfloat16):
+        if t.dtype in (torch.float16, torch.float32, torch.float64, torch.float16):
             t64 = t.to(dtype=torch.float64)
             rounded = torch.round(t64)
             if torch.allclose(t64, rounded, rtol=0.0, atol=1e-6):

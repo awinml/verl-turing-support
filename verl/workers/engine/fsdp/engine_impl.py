@@ -212,7 +212,7 @@ class FSDPEngine(BaseEngine):
 
         model_config = AutoConfig.from_pretrained(
             local_path,
-            attn_implementation="flash_attention_2",
+            attn_implementation="sdpa",
             trust_remote_code=config.model.get("trust_remote_code", False),
         )
         model_config.num_labels = 1
@@ -274,7 +274,7 @@ class FSDPEngine(BaseEngine):
             reduce_dtype = PrecisionType.to_dtype(mixed_precision_config.get("reduce_dtype", "fp32"))
             buffer_dtype = PrecisionType.to_dtype(mixed_precision_config.get("buffer_dtype", "fp32"))
         else:
-            param_dtype = torch.bfloat16
+            param_dtype = torch.float16
             reduce_dtype = torch.float32
             buffer_dtype = torch.float32
 
@@ -409,7 +409,7 @@ class FSDPEngine(BaseEngine):
                     [inputs[key] for inputs in micro_batch["multi_modal_inputs"]], dim=0
                 )
 
-        with torch.autocast(device_type=device_name, dtype=torch.bfloat16):
+        with torch.autocast(device_type=device_name, dtype=torch.float16):
             input_ids = micro_batch["input_ids"]
             batch, seqlen = input_ids.shape
             attention_mask = micro_batch["attention_mask"]

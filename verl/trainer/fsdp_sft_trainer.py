@@ -234,7 +234,7 @@ class FSDPSFTTrainer:
                 local_model_path,
                 config=config,
                 torch_dtype=torch_dtype,
-                attn_implementation="flash_attention_2",
+                attn_implementation="sdpa",
                 trust_remote_code=trust_remote_code,
             )
 
@@ -283,7 +283,7 @@ class FSDPSFTTrainer:
         log_gpu_memory_usage("After model allocation", logger=logger)
 
         mixed_precision = MixedPrecision(
-            param_dtype=torch.bfloat16, reduce_dtype=torch.float32, buffer_dtype=torch.float32
+            param_dtype=torch.float16, reduce_dtype=torch.float32, buffer_dtype=torch.float32
         )
 
         auto_wrap_policy = get_fsdp_wrap_policy(
@@ -318,7 +318,7 @@ class FSDPSFTTrainer:
         elif fsdp_strategy == "fsdp2":
             assert CPUOffloadPolicy is not None, "PyTorch version >= 2.4 is required for using fully_shard API (FSDP2)"
             mp_policy = MixedPrecisionPolicy(
-                param_dtype=torch.bfloat16, reduce_dtype=torch.float32, cast_forward_inputs=True
+                param_dtype=torch.float16, reduce_dtype=torch.float32, cast_forward_inputs=True
             )
 
             fsdp_kwargs = {
@@ -375,7 +375,7 @@ class FSDPSFTTrainer:
 
         # Context manager for sequence parallel if needed
         context = self.sharding_manager if use_sp else nullcontext()
-        with context, torch.autocast(device_type=self.device_name, dtype=torch.bfloat16):
+        with context, torch.autocast(device_type=self.device_name, dtype=torch.float16):
             if not use_sp:
                 # Standard forward pass without sequence parallel
                 labels = input_ids[:, 1:].contiguous()

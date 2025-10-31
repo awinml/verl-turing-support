@@ -190,7 +190,7 @@ class FSDPEngine(BaseEngine):
 
         if torch_dtype is None:
             # if it is training, we force torch_dtype to fp32
-            torch_dtype = torch.float32 if not self.engine_config.forward_only else torch.bfloat16
+            torch_dtype = torch.float32 if not self.engine_config.forward_only else torch.float16
 
         torch_dtype = PrecisionType.to_dtype(torch_dtype)
 
@@ -282,7 +282,7 @@ class FSDPEngine(BaseEngine):
             reduce_dtype = PrecisionType.to_dtype(mixed_precision_config.get("reduce_dtype", "fp32"))
             buffer_dtype = PrecisionType.to_dtype(mixed_precision_config.get("buffer_dtype", "fp32"))
         else:
-            param_dtype = torch.bfloat16
+            param_dtype = torch.float16
             reduce_dtype = torch.float32
             buffer_dtype = torch.float32
 
@@ -940,7 +940,7 @@ class FSDPEngineWithLMHead(FSDPEngine):
         micro_batch = micro_batch.to(get_device_id())
         model_inputs, output_args = self.prepare_model_inputs(micro_batch=micro_batch)
 
-        with torch.autocast(device_type=device_name, dtype=torch.bfloat16):
+        with torch.autocast(device_type=device_name, dtype=torch.float16):
             raw_output = self.module(
                 **model_inputs,
                 use_cache=False,

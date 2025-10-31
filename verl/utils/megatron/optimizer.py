@@ -29,7 +29,7 @@ def init_megatron_optim_config(optim_config: dict) -> OptimizerConfig:
         "clip_grad": optim_config.clip_grad,
         "weight_decay": optim_config.weight_decay,
         "bf16": True,
-        "params_dtype": torch.bfloat16,
+        "params_dtype": torch.float16,
         "use_distributed_optimizer": True,
     }
 

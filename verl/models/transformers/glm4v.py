@@ -224,7 +224,7 @@ def _custom_flash_attention_forward(
         flash_kwargs["softcap"] = kwargs.pop("softcap")
 
     query_states, key_states, value_states = fa_peft_integration_check(
-        query_states, key_states, value_states, target_dtype=torch.bfloat16
+        query_states, key_states, value_states, target_dtype=torch.float16
     )
 
     if position_ids is not None:
